@@ -1,26 +1,31 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { Contract } from "ethers";
-import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers";
-
+import { Signer } from "ethers";
+import { RealEstate } from "../typechain-types/RealEstate.sol";
+import { Escrow } from "../typechain-types/Escrow";
 
 describe('RealEstate', () => {
-    let _realEstate: Contract, _escrow: Contract;
-    let _deployer:SignerWithAddress, seller:SignerWithAddress;
+    let _realEstate: RealEstate, _escrow: Escrow;
+    let _deployer: Signer, seller: Signer;
+    let nftID = 1;
 
     beforeEach(async function () {
-        //laodcontract
-        const RealEstate = await ethers.getContractFactory();
-        const Escrow = await ethers.getContractFactory();
-        //deploycontract
+        const accounts = await ethers.getSigners();
+        _deployer = accounts[0];
+        seller = _deployer;
 
-        _realEstate = await RealEstate.deploy();
-        _escrow = await Escrow.deploy();
-    })
-    describe("Deployment", async () =>{
-        it('sends NTF to sellers / deployer', async()=>{
-            expect(await _realEstate.ownerOf(nftID).to.equal(seller))
-        })
-    })
-   
-})
+        const RealEstateFactory = await ethers.getContractFactory("RealEstate");
+        const EscrowFactory = await ethers.getContractFactory("Escrow");
+
+        _realEstate = await RealEstateFactory.deploy() as RealEstate;
+        _escrow = await EscrowFactory.deploy(_realEstate, nftID) as Escrow;
+    });
+
+    describe("Deployment", async () => {
+        it('sends NTF to sellers / deployer', async () => {
+            const owner = await _realEstate.ownerOf(nftID);
+
+            expect(owner).to.equal(await seller.getAddress());
+        });
+    });
+});
